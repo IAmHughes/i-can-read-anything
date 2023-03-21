@@ -1,86 +1,94 @@
-from flask import Flask, render_template, request, flash, redirect, url_for, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from googletrans import Translator
-import config
+# app.py
 
-app = Flask(__name__)
-app.config.from_object(config)
-db = SQLAlchemy(app)
-login_manager = LoginManager(app)
-login_manager.login_view = 'login'
-
-from models import user, translation
-db.create_all()
-
+from flask import Flask, render_template, url_for, redirect, request, flash
+from flask_login import login_user, login_required, current_user
+from config import Config
+from forms import LoginForm, RegistrationForm, TranslateForm
+from extensions import db, login_manager
 from models.user import User, load_user
 from models.translation import Translation
-from forms import LoginForm, RegistrationForm
+from googletrans import Translator
 
-translator = Translator()
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+    db.init_app(app)
+    login_manager.init_app(app)
+    login_manager.login_view = 'login'
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    form = RegistrationForm()
-    if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data)
-        user.set_password(form.password.data)
-        db.session.add(user)
-        db.session.commit()
-        flash('Registration successful!')
-        return redirect(url_for('login'))
-    return render_template('register.html', form=form)
+    @app.before_first_request
+    def create_tables():
+        db.create_all()
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    form = LoginForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        if user and user.check_password(form.password.data):
-            login_user(user)
+    @app.route('/')
+    def home():
+        return render_template('index.html')
+
+    @app.route('/register', methods=['GET', 'POST'])
+    def register():
+        form = RegistrationForm()
+        if form.validate_on_submit():
+            user = User(email=form.email.data, password=form.password.data)
+            db.session.add(user)
+            db.session.commit()
+            flash('Registration successful. Please log in.', 'success')
+            return redirect(url_for('login'))
+        return render_template('register.html', form=form)
+
+    @app.route('/login', methods=['GET', 'POST'])
+    def login():
+        form = LoginForm()
+        if form.validate_on_submit():
+            user = User.query.filter_by(email=form.email.data).first()
+            if user and user.check_password(form.password.data):
+                login_user(user)
+                flash('Login successful.', 'success')
+                return redirect(url_for('translate'))
+            else:
+                flash('Invalid email or password.', 'danger')
+        return render_template('login.html', form=form)
+
+    @app.route('/translate', methods=['GET', 'POST'])
+    @login_required
+    def translate():
+        form = TranslateForm()
+        if form.validate_on_submit():
+            translator = Translator()
+            translated = translator.translate(form.text.data, dest=form.target_language.data)
+            translation = Translation(text=form.text.data, translation=translated.text, user_id=current_user.id)
+            db.session.add(translation)
+            db.session.commit()
+            flash('Translation saved.', 'success')
             return redirect(url_for('translations'))
-        flash('Invalid email or password')
-    return render_template('login.html', form=form)
+        return render_template('translate.html', form=form)
 
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('index'))
+    @app.route('/translations', methods=['GET'])
+    @login_required
+    def translations():
+        saved_translations = current_user.get_saved_translations()
+        return render_template('translations.html', translations=saved_translations)
 
-@app.route('/translations', methods=['GET', 'POST'])
-@login_required
-def translations():
-    if request.method == 'POST':
-        text = request.form.get('text')
-        translated_text = translator.translate(text, src='auto', dest='en').text
-        new_translation = Translation(text=text, translation=translated_text, user_id=current_user.id)
-        db.session.add(new_translation)
-        db.session.commit()
-        flash('Translation saved!')
-    translations = current_user.translations.all()
-    return render_template('translations.html', translations=translations)
-
-@app.route('/export_translations')
-@login_required
-def export_translations():
-    translations = current_user.translations.all()
-    filename = f"{current_user.username}_translations.txt"
-    with open(filename, 'w', encoding='utf-8') as f:
+    @app.route('/export_translations', methods=['GET'])
+    @login_required
+    def export_translations():
+        translations = current_user.get_saved_translations()
+        csv_data = io.StringIO()
+        writer = csv.writer(csv_data)
+        writer.writerow(['Text', 'Translation'])
         for t in translations:
-            f.write(f"{t.text}\n{t.translation}\n\n")
-    return send_file(filename, as_attachment=True)
+            writer.writerow([t.text, t.translation])
+        csv_data.seek(0)
+        return send_file(
+            csv_data,
+            mimetype='text/csv',
+            as_attachment=True,
+            attachment_filename='translations.csv'
+        )
 
-@app.route('/translate', methods=['POST'])
-@login_required
-def translate():
-    text = request.json['text']
-    translated_text = translator.translate(text, src='auto', dest='en').text
-    return jsonify(translated_text=translated_text)
+    return app
+
+app = create_app()
 
 if __name__ == '__main__':
     app.run(debug=True)
