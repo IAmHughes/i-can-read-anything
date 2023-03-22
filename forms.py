@@ -16,6 +16,11 @@ class LoginForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('Login')
+    
+def custom_coerce(value):
+    if value == '':
+        return None
+    return int(value)
 
 class ProfileForm(FlaskForm):
     email = StringField('Email', validators=[DataRequired(), Email()])
@@ -23,5 +28,5 @@ class ProfileForm(FlaskForm):
     confirm_password = PasswordField('Confirm New Password', validators=[EqualTo('password')])
     bio = TextAreaField('Bio', validators=[Length(max=500)])
     language = SelectField('Language', choices=[('', 'Select a language')] + [(str(i), lang) for i, lang in enumerate(languages)], validators=[Optional()])
-    proficiency = SelectField('Proficiency', choices=[('', 'Select proficiency')] + [(i, i) for i in range(1, 6)], coerce=int, validators=[Optional()])
+    proficiency = SelectField('Proficiency', choices=[('', 'Select proficiency')] + [(str(i), str(i)) for i in range(1, 6)], coerce=custom_coerce, validators=[Optional()])
     submit = SubmitField('Update Profile')

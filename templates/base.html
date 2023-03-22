@@ -29,14 +29,25 @@
             <a class="nav-link" href="#">About</a>
           </li>
         </ul>
-        <ul class="navbar-nav ml-auto">
-          <li class="nav-item">
-              <a class="nav-link btn btn-outline-light mr-2" href="{{ url_for('register') }}">Register</a>
-          </li>
-          <li class="nav-item">
-              <a class="nav-link btn btn-primary" href="{{ url_for('login') }}">Login</a>
-          </li>
-        </ul>
+        {% if current_user.is_authenticated %}
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('profile') }}">Profile</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </li>
+          </ul>
+        {% else %}
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link btn btn-outline-light mr-2" href="{{ url_for('register') }}">Register</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link btn btn-primary" href="{{ url_for('login') }}">Login</a>
+            </li>
+          </ul>
+        {% endif %}
       </div>
     </nav>
 

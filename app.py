@@ -1,6 +1,6 @@
-from flask import Flask, render_template, redirect, url_for, flash
+from flask import Flask, render_template, redirect, url_for, flash, request
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, login_required, current_user
+from flask_login import LoginManager, login_required, current_user, login_user, logout_user
 from forms import RegistrationForm, LoginForm, ProfileForm
 from models import db
 from models.user import UserLanguage
@@ -27,10 +27,19 @@ def home():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('profile'))
+
     form = RegistrationForm()
     if form.validate_on_submit():
+        user = User(username=form.username.data, email=form.email.data)
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.commit()
+
         flash(f'Account created for {form.username.data}!', 'success')
-        return redirect(url_for('home'))
+        login_user(user)
+        return redirect(url_for('profile'))
     return render_template('register.html', title='Register', form=form)
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -41,9 +50,12 @@ def login():
         return redirect(url_for('home'))
     return render_template('login.html', title='Login', form=form)
 
-from flask_login import login_required, current_user
-from forms import RegistrationForm, LoginForm, ProfileForm
-from models.user import UserLanguage
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('home'))
 
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
