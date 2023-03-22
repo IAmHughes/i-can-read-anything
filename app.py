@@ -1,8 +1,9 @@
 from flask import Flask, render_template, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
-from forms import RegistrationForm, LoginForm
+from flask_login import LoginManager, login_required, current_user
+from forms import RegistrationForm, LoginForm, ProfileForm
 from models import db
+from models.user import UserLanguage
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -39,6 +40,45 @@ def login():
         flash('Login successful!', 'success')
         return redirect(url_for('home'))
     return render_template('login.html', title='Login', form=form)
+
+from flask_login import login_required, current_user
+from forms import RegistrationForm, LoginForm, ProfileForm
+from models.user import UserLanguage
+
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    form = ProfileForm()
+    if form.validate_on_submit():
+        # Update email and password
+        current_user.email = form.email.data
+        if form.password.data:
+            current_user.set_password(form.password.data)
+
+        # Update bio
+        current_user.bio = form.bio.data
+
+        # Update languages and proficiencies
+        if form.language.data and form.proficiency.data:
+            language_id = int(form.language.data)
+            language = languages[language_id]
+            proficiency = form.proficiency.data
+            user_language = UserLanguage.query.filter_by(user_id=current_user.id, language=language).first()
+
+            if user_language:
+                user_language.proficiency = proficiency
+            else:
+                new_user_language = UserLanguage(user_id=current_user.id, language=language, proficiency=proficiency)
+                db.session.add(new_user_language)
+
+        db.session.commit()
+        flash('Profile updated successfully.', 'success')
+
+    elif request.method == 'GET':
+        form.email.data = current_user.email
+        form.bio.data = current_user.bio
+
+    return render_template('profile.html', title='Profile', form=form)
 
 # Add other routes and functions here
 
