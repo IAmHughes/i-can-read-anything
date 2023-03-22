@@ -8,6 +8,8 @@ from extensions import db, login_manager
 from models.user import User, load_user
 from models.translation import Translation
 from googletrans import Translator
+import csv
+import io
 
 def create_app():
     app = Flask(__name__)
@@ -29,7 +31,8 @@ def create_app():
     def register():
         form = RegistrationForm()
         if form.validate_on_submit():
-            user = User(email=form.email.data, password=form.password.data)
+            user = User(email=form.email.data)  # Removed the password keyword argument
+            user.set_password(form.password.data)  # Set the password using set_password method
             db.session.add(user)
             db.session.commit()
             flash('Registration successful. Please log in.', 'success')
