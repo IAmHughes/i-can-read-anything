@@ -1,3 +1,23 @@
+/* Site name */
+.navbar-brand {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #000000 !important;
+}
+
+/* Navigation bar */
+nav.navbar {
+  background-color: #007bff;
+}
+
+nav.navbar a.nav-link {
+  color: #ffffff;
+}
+
+nav.navbar a.nav-link:hover {
+  color: #cccccc;
+}
+
 body {
   font-family: 'Roboto', sans-serif;
   line-height: 1.6;
