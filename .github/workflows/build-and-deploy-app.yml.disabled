@@ -27,7 +27,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install Flask Flask-SQLAlchemy Flask-Login flask_wtf googletrans
+        pip install Flask Flask-SQLAlchemy Flask-Login flask_wtf googletrans email_validator
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Run the app
       run: |
