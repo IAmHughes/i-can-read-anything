@@ -1,12 +1,27 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 from flask_security import Security, SQLAlchemyUserDatastore
+from flask_migrate import Migrate
+from config import Config
 
-app = Flask(__name__)
-app.config.from_object('config')
+db = SQLAlchemy()
+migrate = Migrate()
+security = Security()
 
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
 
-from app import models, routes
+    db.init_app(app)
+    migrate.init_app(app, db)
+
+    # Import the models after the db object is created
+    from app import models
+
+    # Set up Flask-Security
+    user_datastore = SQLAlchemyUserDatastore(db, models.User, models.Role)
+    security.init_app(app, user_datastore)
+
+    from app import routes
+
+    return app
