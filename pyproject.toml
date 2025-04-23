@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "i-can-read-anything"
+version = "0.1.0"
+description = "A Flask-based language learning application"
+authors = ["Thomas Hughes <2894107+IAmHughes@users.noreply.github.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+flask = "^3.1.0"
+flask-sqlalchemy = "^3.1.1"
+flask-cors = "^5.0.1"
+requests = "^2.32.3"
+flask-migrate = "^4.1.0"
+flask-bcrypt = "^1.0.1"
+google-cloud-texttospeech = "^2.14.1"
+google-cloud-translate = "^3.0.0"
+beautifulsoup4 = "^4.13.4"
+ebooklib = "^0.18"
+feedparser = "^6.0.11"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+black = "^25.1.0"
+flake8 = "^7.2.0"
+isort = "^6.0.1"
+pytest-mock = "^3.14.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
